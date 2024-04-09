@@ -91,12 +91,7 @@ size_t util::GetTotalMallocUsage() {
   return ASAN_GET_ALLOCATED_MEM_FUNCTION();
 #endif
 
-#ifdef HAVE_GPERFTOOLS_MALLOC_EXTENSION_H
-  size_t value = 0;
-  MallocExtension::instance()->GetNumericProperty(
-      "generic.current_allocated_bytes", &value);
-  return value;
-#elif defined(HAVE_MALLINFO2)
+#if defined(HAVE_MALLINFO2)
   // niy in tcmalloc
   struct mallinfo2 mi = ::mallinfo2();
   return mi.uordblks + mi.hblkhd;

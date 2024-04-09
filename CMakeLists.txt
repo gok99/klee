@@ -111,7 +111,7 @@ include(CMakePushCheckState)
 ################################################################################
 # Find LLVM
 ################################################################################
-find_package(LLVM REQUIRED CONFIG HINTS "${LLVM_DIR}")
+find_package(LLVM 13 REQUIRED CONFIG HINTS "${LLVM_DIR}")
 message(STATUS "LLVM directory ${LLVM_DIR}")
 set(LLVMCC "${LLVM_TOOLS_BINARY_DIR}/clang"
   CACHE
@@ -265,7 +265,7 @@ endif()
 ################################################################################
 # TCMalloc support
 ################################################################################
-OPTION(ENABLE_TCMALLOC "Enable TCMalloc support" ON)
+OPTION(ENABLE_TCMALLOC "Enable TCMalloc support" OFF)
 if (ENABLE_TCMALLOC)
   message(STATUS "TCMalloc support enabled")
   set(TCMALLOC_HEADER "gperftools/malloc_extension.h")
