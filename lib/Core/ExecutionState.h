@@ -286,6 +286,10 @@ public:
   bool merge(const ExecutionState &b);
   void dumpStack(llvm::raw_ostream &out) const;
 
+  ConstraintSet getConstraints() const;
+  TreeOStream getPathStream() const;
+  TreeOStream getSymPathStream() const;
+
   std::uint32_t getID() const { return id; };
   void setID() { id = nextID++; };
   static std::uint32_t getLastID() { return nextID - 1; };

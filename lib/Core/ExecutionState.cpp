@@ -92,6 +92,18 @@ ExecutionState::~ExecutionState() {
   while (!stack.empty()) popFrame();
 }
 
+ConstraintSet ExecutionState::getConstraints() const {
+    return constraints;
+}
+
+TreeOStream ExecutionState::getPathStream() const {
+  return TreeOStream(pathOS);
+}
+
+TreeOStream ExecutionState::getSymPathStream() const {
+  return TreeOStream(symPathOS);
+}
+
 ExecutionState::ExecutionState(const ExecutionState& state):
     pc(state.pc),
     prevPC(state.prevPC),

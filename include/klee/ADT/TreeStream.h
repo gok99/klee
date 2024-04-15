@@ -54,7 +54,6 @@ namespace klee {
     friend class TreeStreamWriter;
 
   private:
-    TreeStreamWriter *writer;
     unsigned id;
     
     TreeOStream(TreeStreamWriter &_writer, unsigned _id);
@@ -62,6 +61,8 @@ namespace klee {
   public:
     TreeOStream();
     ~TreeOStream();
+
+    TreeStreamWriter *writer;
 
     unsigned getID() const;
 
