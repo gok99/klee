@@ -82,7 +82,7 @@ cl::opt<SwitchImplType> SwitchType(
                           "lower using LLVM"),
                clEnumValN(SwitchImplType::eSwitchTypeInternal, "internal",
                           "execute switch internally")),
-    cl::init(SwitchImplType::eSwitchTypeInternal), cl::cat(ModuleCat));
+    cl::init(SwitchImplType::eSwitchTypeLLVM), cl::cat(ModuleCat));
 
 } // namespace
 
