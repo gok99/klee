@@ -14,6 +14,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <iostream>
 #include "klee/Config/Version.h"
 #include "klee/Support/OptionCategories.h"
 
@@ -31,6 +32,7 @@ DISABLE_WARNING_DEPRECATED_DECLARATIONS
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Transforms/IPO.h"
+#include "llvm/Transforms/IPO/AlwaysInliner.h"
 #include "llvm/Transforms/IPO/FunctionAttrs.h"
 #include "llvm/Transforms/InstCombine/InstCombine.h"
 #include "llvm/Transforms/Scalar.h"
@@ -196,8 +198,15 @@ void klee::optimizeModule(llvm::Module *M,
   // calls, etc, so let instcombine do this.
   addPass(Passes, createInstructionCombiningPass());
 
-  if (!DisableInline)
-    addPass(Passes, createFunctionInliningPass()); // Inline small functions
+  if (!DisableInline) {
+    // mark all functions `always_inline`
+    for (auto &F : *M) {
+      F.removeAttribute(AttributeList::FunctionIndex, Attribute::NoInline);
+      F.addFnAttr(Attribute::AlwaysInline);
+    }
+    // Inline always_inline functions
+    addPass(Passes, createAlwaysInlinerLegacyPass());
+  }
 
 #if LLVM_VERSION_CODE <= LLVM_VERSION(15, 0)
   addPass(Passes, createPruneEHPass()); // Remove dead EH info
