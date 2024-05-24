@@ -14,7 +14,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <iostream>
 #include "klee/Config/Version.h"
 #include "klee/Support/OptionCategories.h"
 
