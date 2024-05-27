@@ -220,9 +220,9 @@ void klee::optimizeModule(llvm::Module *M,
 //#endif
 //
 //  // The IPO passes may leave cruft around.  Clean up after them.
-  addPass(Passes, createInstructionCombiningPass());
-  addPass(Passes, createJumpThreadingPass()); // Thread jumps.
-  addPass(Passes, createSROAPass());          // Break up allocas
+//  addPass(Passes, createInstructionCombiningPass());
+//  addPass(Passes, createJumpThreadingPass()); // Thread jumps.
+//  addPass(Passes, createSROAPass());          // Break up allocas
 
 //  // Run a few AA driven optimizations here and now, to cleanup the code.
 //  addPass(Passes, createPostOrderFunctionAttrsLegacyPass());
