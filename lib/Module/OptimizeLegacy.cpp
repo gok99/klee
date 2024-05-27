@@ -151,51 +151,51 @@ void klee::optimizeModule(llvm::Module *M,
 
   // Instantiate the pass manager to organize the passes.
   legacy::PassManager Passes;
-
-  // If we're verifying, start off with a verification pass.
-  if (VerifyEach)
-    Passes.add(createVerifierPass());
-
-  // DWD - Run the opt standard pass list as well.
-  AddStandardCompilePasses(Passes);
-
-  // Now that composite has been compiled, scan through the module, looking
-  // for a main function.  If main is defined, mark all other functions
-  // internal.
-  if (!DisableInternalize) {
-    auto PreserveFunctions = [=](const llvm::GlobalValue &GV) {
-      StringRef GVName = GV.getName();
-
-      for (const char *fun : preservedFunctions)
-        if (GVName.equals(fun))
-          return true;
-
-      return false;
-    };
-    ModulePass *pass = createInternalizePass(PreserveFunctions);
-    addPass(Passes, pass);
-  }
-
-  // Propagate constants at call sites into the functions they call.  This
-  // opens opportunities for globalopt (and inlining) by substituting function
-  // pointers passed as arguments to direct uses of functions.
-  addPass(Passes, createIPSCCPPass());
-
-  // Now that we internalized some globals, see if we can hack on them!
-  addPass(Passes, createGlobalOptimizerPass());
-
-  // Linking modules together can lead to duplicated global constants, only
-  // keep one copy of each constant...
-  addPass(Passes, createConstantMergePass());
-
-  // Remove unused arguments from functions...
-  addPass(Passes, createDeadArgEliminationPass());
-
-  // Reduce the code after globalopt and ipsccp.  Both can open up significant
-  // simplification opportunities, and both can propagate functions through
-  // function pointers.  When this happens, we often have to resolve varargs
-  // calls, etc, so let instcombine do this.
-  addPass(Passes, createInstructionCombiningPass());
+//
+//  // If we're verifying, start off with a verification pass.
+//  if (VerifyEach)
+//    Passes.add(createVerifierPass());
+//
+//  // DWD - Run the opt standard pass list as well.
+//  AddStandardCompilePasses(Passes);
+//
+//  // Now that composite has been compiled, scan through the module, looking
+//  // for a main function.  If main is defined, mark all other functions
+//  // internal.
+//  if (!DisableInternalize) {
+//    auto PreserveFunctions = [=](const llvm::GlobalValue &GV) {
+//      StringRef GVName = GV.getName();
+//
+//      for (const char *fun : preservedFunctions)
+//        if (GVName.equals(fun))
+//          return true;
+//
+//      return false;
+//    };
+//    ModulePass *pass = createInternalizePass(PreserveFunctions);
+//    addPass(Passes, pass);
+//  }
+//
+//  // Propagate constants at call sites into the functions they call.  This
+//  // opens opportunities for globalopt (and inlining) by substituting function
+//  // pointers passed as arguments to direct uses of functions.
+//  addPass(Passes, createIPSCCPPass());
+//
+//  // Now that we internalized some globals, see if we can hack on them!
+//  addPass(Passes, createGlobalOptimizerPass());
+//
+//  // Linking modules together can lead to duplicated global constants, only
+//  // keep one copy of each constant...
+//  addPass(Passes, createConstantMergePass());
+//
+//  // Remove unused arguments from functions...
+//  addPass(Passes, createDeadArgEliminationPass());
+//
+//  // Reduce the code after globalopt and ipsccp.  Both can open up significant
+//  // simplification opportunities, and both can propagate functions through
+//  // function pointers.  When this happens, we often have to resolve varargs
+//  // calls, etc, so let instcombine do this.
+//  addPass(Passes, createInstructionCombiningPass());
 
   if (!DisableInline) {
     // mark all functions `always_inline`
@@ -206,57 +206,57 @@ void klee::optimizeModule(llvm::Module *M,
     // Inline always_inline functions
     addPass(Passes, createAlwaysInlinerLegacyPass());
   }
-
-#if LLVM_VERSION_CODE <= LLVM_VERSION(15, 0)
-  addPass(Passes, createPruneEHPass()); // Remove dead EH info
-#endif
-  addPass(Passes, createGlobalOptimizerPass()); // Optimize globals again.
-  addPass(Passes, createGlobalDCEPass());       // Remove dead functions
-
-#if LLVM_VERSION_CODE <= LLVM_VERSION(14, 0)
-  // If we didn't decide to inline a function, check to see if we can
-  // transform it to pass arguments by value instead of by reference.
-  addPass(Passes, createArgumentPromotionPass());
-#endif
-
-  // The IPO passes may leave cruft around.  Clean up after them.
+//
+//#if LLVM_VERSION_CODE <= LLVM_VERSION(15, 0)
+//  addPass(Passes, createPruneEHPass()); // Remove dead EH info
+//#endif
+//  addPass(Passes, createGlobalOptimizerPass()); // Optimize globals again.
+//  addPass(Passes, createGlobalDCEPass());       // Remove dead functions
+//
+//#if LLVM_VERSION_CODE <= LLVM_VERSION(14, 0)
+//  // If we didn't decide to inline a function, check to see if we can
+//  // transform it to pass arguments by value instead of by reference.
+//  addPass(Passes, createArgumentPromotionPass());
+//#endif
+//
+//  // The IPO passes may leave cruft around.  Clean up after them.
   addPass(Passes, createInstructionCombiningPass());
   addPass(Passes, createJumpThreadingPass()); // Thread jumps.
   addPass(Passes, createSROAPass());          // Break up allocas
 
-  // Run a few AA driven optimizations here and now, to cleanup the code.
-  addPass(Passes, createPostOrderFunctionAttrsLegacyPass());
-  addPass(Passes, createReversePostOrderFunctionAttrsPass()); // Add nocapture
-  addPass(Passes, createGlobalsAAWrapperPass()); // IP alias analysis
-
-  addPass(Passes, createLICMPass());                 // Hoist loop invariants
-  addPass(Passes, createGVNPass());                  // Remove redundancies
-  addPass(Passes, createMemCpyOptPass());            // Remove dead memcpy's
-  addPass(Passes, createDeadStoreEliminationPass()); // Nuke dead stores
-
-  // Cleanup and simplify the code after the scalar optimizations.
-  addPass(Passes, createInstructionCombiningPass());
-
-  addPass(Passes, createJumpThreadingPass());           // Thread jumps.
-  addPass(Passes, createPromoteMemoryToRegisterPass()); // Cleanup jumpthread.
-
-  // Delete basic blocks, which optimization passes may have killed...
-  addPass(Passes, createCFGSimplificationPass());
-
-  // Now that we have optimized the program, discard unreachable functions...
-  addPass(Passes, createGlobalDCEPass());
-
-  // If the -s or -S command line options were specified, strip the symbols out
-  // of the resulting program to make it smaller.  -s and -S are GNU ld options
-  // that we are supporting; they alias -strip-all and -strip-debug.
-  if (Strip || StripDebug)
-    addPass(Passes, createStripSymbolsPass(StripDebug && !Strip));
-
-  // The user's passes may leave cruft around; clean up after them.
-  addPass(Passes, createInstructionCombiningPass());
-  addPass(Passes, createCFGSimplificationPass());
-  addPass(Passes, createAggressiveDCEPass());
-  addPass(Passes, createGlobalDCEPass());
+//  // Run a few AA driven optimizations here and now, to cleanup the code.
+//  addPass(Passes, createPostOrderFunctionAttrsLegacyPass());
+//  addPass(Passes, createReversePostOrderFunctionAttrsPass()); // Add nocapture
+//  addPass(Passes, createGlobalsAAWrapperPass()); // IP alias analysis
+//
+//  addPass(Passes, createLICMPass());                 // Hoist loop invariants
+//  addPass(Passes, createGVNPass());                  // Remove redundancies
+//  addPass(Passes, createMemCpyOptPass());            // Remove dead memcpy's
+//  addPass(Passes, createDeadStoreEliminationPass()); // Nuke dead stores
+//
+//  // Cleanup and simplify the code after the scalar optimizations.
+//  addPass(Passes, createInstructionCombiningPass());
+//
+//  addPass(Passes, createJumpThreadingPass());           // Thread jumps.
+//  addPass(Passes, createPromoteMemoryToRegisterPass()); // Cleanup jumpthread.
+//
+//  // Delete basic blocks, which optimization passes may have killed...
+//  addPass(Passes, createCFGSimplificationPass());
+//
+//  // Now that we have optimized the program, discard unreachable functions...
+//  addPass(Passes, createGlobalDCEPass());
+//
+//  // If the -s or -S command line options were specified, strip the symbols out
+//  // of the resulting program to make it smaller.  -s and -S are GNU ld options
+//  // that we are supporting; they alias -strip-all and -strip-debug.
+//  if (Strip || StripDebug)
+//    addPass(Passes, createStripSymbolsPass(StripDebug && !Strip));
+//
+//  // The user's passes may leave cruft around; clean up after them.
+//  addPass(Passes, createInstructionCombiningPass());
+//  addPass(Passes, createCFGSimplificationPass());
+//  addPass(Passes, createAggressiveDCEPass());
+//  addPass(Passes, createGlobalDCEPass());
 
   // Run our queue of passes all at once now, efficiently.
   Passes.run(*M);
