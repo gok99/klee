@@ -200,6 +200,10 @@ void klee::optimizeModule(llvm::Module *M,
   if (!DisableInline) {
     // mark all functions `always_inline`
     for (auto &F : *M) {
+//      if (F.hasFnAttribute(Attribute::OptimizeNone))
+//          continue;
+
+      F.removeAttribute(AttributeList::FunctionIndex, Attribute::OptimizeNone);
       F.removeAttribute(AttributeList::FunctionIndex, Attribute::NoInline);
       F.addFnAttr(Attribute::AlwaysInline);
     }
