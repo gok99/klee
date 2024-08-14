@@ -203,7 +203,6 @@ void klee::optimizeModule(llvm::Module *M,
 //      if (F.hasFnAttribute(Attribute::OptimizeNone))
 //          continue;
 
-      F.removeAttribute(AttributeList::FunctionIndex, Attribute::OptimizeNone);
       F.removeAttribute(AttributeList::FunctionIndex, Attribute::NoInline);
       F.removeAttribute(AttributeList::FunctionIndex, Attribute::OptimizeNone);
       F.addFnAttr(Attribute::AlwaysInline);
