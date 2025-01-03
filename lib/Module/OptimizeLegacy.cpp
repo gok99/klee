@@ -208,16 +208,18 @@ void klee::optimizeModule(llvm::Module *M,
     std::queue<std::string> funQueue;
     funQueue.push(EntryPoint);
     // std::cout<< EntryPoint << std::endl;
-    while(!funQueue.empty()){
+    while (!funQueue.empty()) {
       std::string currentFun = funQueue.front();
       funQueue.pop();
       if (visited.find(currentFun)==visited.end()){
         visited[currentFun] = true;
         Function *F = M->getFunction(currentFun);
-        if(F){
-          F->removeAttribute(AttributeList::FunctionIndex, Attribute::NoInline);
-          F->removeAttribute(AttributeList::FunctionIndex, Attribute::OptimizeNone);
-          F->addFnAttr(Attribute::AlwaysInline);
+        if (F) {
+          if (currentFun != EntryPoint) {
+            F->removeAttribute(AttributeList::FunctionIndex, Attribute::NoInline);
+            F->removeAttribute(AttributeList::FunctionIndex, Attribute::OptimizeNone);
+            F->addFnAttr(Attribute::AlwaysInline);
+          }
           // std::cout<< currentFun << std::endl;
           for(auto &BB : *F){
             for(auto &I : BB){
