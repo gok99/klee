@@ -92,7 +92,7 @@ void klee::optimiseAndPrepare(bool OptimiseKLEECall, bool Optimize,
   }
 
   if (Optimize)
-    optimizeModule(module, preservedFunctions);
+    optimizeModule(module, preservedFunctions, EntryPoint);
 
   // Needs to happen after linking (since ctors/dtors can be modified)
   // and optimization (since global optimization can rewrite lists).

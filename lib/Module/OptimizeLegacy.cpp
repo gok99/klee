@@ -28,6 +28,8 @@ DISABLE_WARNING_DEPRECATED_DECLARATIONS
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Verifier.h"
+#include "llvm/IR/Instruction.h"
+#include "llvm/IR/Instructions.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Transforms/IPO.h"
@@ -38,6 +40,9 @@ DISABLE_WARNING_DEPRECATED_DECLARATIONS
 #include "llvm/Transforms/Scalar/GVN.h"
 #include "llvm/Transforms/Utils.h"
 DISABLE_WARNING_POP
+#include <queue>
+#include <unordered_map>
+#include <iostream>
 
 using namespace llvm;
 using namespace klee;
@@ -147,7 +152,7 @@ static void AddStandardCompilePasses(legacy::PassManager &PM) {
 /// optimizations, any loaded plugin-optimization modules, and then the
 /// inter-procedural optimizations if applicable.
 void klee::optimizeModule(llvm::Module *M,
-                          llvm::ArrayRef<const char *> preservedFunctions) {
+                          llvm::ArrayRef<const char *> preservedFunctions, std::string EntryPoint) {
 
   // Instantiate the pass manager to organize the passes.
   legacy::PassManager Passes;
@@ -198,15 +203,56 @@ void klee::optimizeModule(llvm::Module *M,
 //  addPass(Passes, createInstructionCombiningPass());
 
   if (!DisableInline) {
-    // mark all functions `always_inline`
-    for (auto &F : *M) {
-//      if (F.hasFnAttribute(Attribute::OptimizeNone))
-//          continue;
-
-      F.removeAttribute(AttributeList::FunctionIndex, Attribute::NoInline);
-      F.removeAttribute(AttributeList::FunctionIndex, Attribute::OptimizeNone);
-      F.addFnAttr(Attribute::AlwaysInline);
+    // make function inline only after EntryPoint
+    std::unordered_map<std::string, bool> visited;
+    std::queue<std::string> funQueue;
+    funQueue.push(EntryPoint);
+    // std::cout<< EntryPoint << std::endl;
+    while(!funQueue.empty()){
+      std::string currentFun = funQueue.front();
+      funQueue.pop();
+      if (visited.find(currentFun)==visited.end()){
+        visited[currentFun] = true;
+        Function *F = M->getFunction(currentFun);
+        if(F){
+          F->removeAttribute(AttributeList::FunctionIndex, Attribute::NoInline);
+          F->removeAttribute(AttributeList::FunctionIndex, Attribute::OptimizeNone);
+          F->addFnAttr(Attribute::AlwaysInline);
+          // std::cout<< currentFun << std::endl;
+          for(auto &BB : *F){
+            for(auto &I : BB){
+              switch (I.getOpcode())
+              {
+              case Instruction::Call:
+              {
+                CallInst *call_inst = dyn_cast<CallInst>(&I);
+                Function *fun = call_inst->getCalledFunction();
+                if(fun){
+                  std::string funName = fun->getName().str();
+                  funQueue.push(funName);
+                }
+                break;
+              }
+                
+              default:
+                continue;
+              }
+            }
+          } 
+        }
+      }
+      
     }
+    
+
+//     // mark all functions `always_inline`
+//     for (auto &F : *M) {
+// //      if (F.hasFnAttribute(Attribute::OptimizeNone))
+// //          continue;
+//       F.removeAttribute(AttributeList::FunctionIndex, Attribute::NoInline);
+//       F.removeAttribute(AttributeList::FunctionIndex, Attribute::OptimizeNone);
+//       F.addFnAttr(Attribute::AlwaysInline);
+//     }
     // Inline always_inline functions
     addPass(Passes, createAlwaysInlinerLegacyPass());
   }

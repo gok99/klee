@@ -31,7 +31,7 @@ void injectStaticConstructorsAndDestructors(llvm::Module *m,
                                             llvm::StringRef entryFunction);
 
 void optimizeModule(llvm::Module *M,
-                    llvm::ArrayRef<const char *> preservedFunctions);
+                    llvm::ArrayRef<const char *> preservedFunctions, std::string EntryPoint);
 } // namespace klee
 
 #endif // KLEE_MODULEHELPER_H
